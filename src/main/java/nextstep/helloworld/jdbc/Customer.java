@@ -1,6 +1,11 @@
 package nextstep.helloworld.jdbc;
 
-public class Customer {
+import java.io.Serializable;
+
+public class Customer implements Serializable {
+
+        private static final long serialVersionUID = 12012031203012L;
+
     private long id;
     private String firstName, lastName;
 

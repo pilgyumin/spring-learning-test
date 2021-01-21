@@ -5,12 +5,12 @@ import nextstep.helloworld.application.AuthorizationException;
 import nextstep.helloworld.dto.MemberResponse;
 import nextstep.helloworld.dto.TokenRequest;
 import nextstep.helloworld.dto.TokenResponse;
+import nextstep.helloworld.infrastructure.AuthorizationExtractor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 @RestController
 public class AuthController {
@@ -32,17 +32,18 @@ public class AuthController {
      * email=email@email.com&password=1234
      */
     @PostMapping("/login/session")
-    public ResponseEntity sessionLogin() {
+    public ResponseEntity sessionLogin(
+            HttpSession session,
+            @RequestParam String email,
+            @RequestParam String password
+    ) {
         // TODO: email과 password 값 추출하기
-        String email = "";
-        String password = "";
-
         if (authService.checkInvalidLogin(email, password)) {
             throw new AuthorizationException();
         }
 
         // TODO: Session에 인증 정보 저장 (key: SESSION_KEY, value: email값)
-
+        session.setAttribute(SESSION_KEY, email);
         return ResponseEntity.ok().build();
     }
 
@@ -54,9 +55,9 @@ public class AuthController {
      * accept: application/json
      */
     @GetMapping("/members/me")
-    public ResponseEntity findMyInfo() {
+    public ResponseEntity findMyInfo(HttpSession session) {
         // TODO: Session을 통해 인증 정보 조회하기 (key: SESSION_KEY)
-        String email = "";
+        String email = (String) session.getAttribute(SESSION_KEY);
         MemberResponse member = authService.findMember(email);
         return ResponseEntity.ok().body(member);
     }
@@ -74,9 +75,8 @@ public class AuthController {
      * }
      */
     @PostMapping("/login/token")
-    public ResponseEntity tokenLogin() {
+    public ResponseEntity tokenLogin(@RequestBody TokenRequest tokenRequest) {
         // TODO: TokenRequest 값을 메서드 파라미터로 받아오기 (hint: @RequestBody)
-        TokenRequest tokenRequest = null;
         TokenResponse tokenResponse = authService.createToken(tokenRequest);
         return ResponseEntity.ok().body(tokenResponse);
     }
@@ -91,7 +91,7 @@ public class AuthController {
     @GetMapping("/members/you")
     public ResponseEntity findYourInfo(HttpServletRequest request) {
         // TODO: authorization 헤더의 Bearer 값을 추출하기
-        String token = "";
+        String token = AuthorizationExtractor.extract(request);
         MemberResponse member = authService.findMemberByToken(token);
         return ResponseEntity.ok().body(member);
     }
